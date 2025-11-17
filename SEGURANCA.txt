@@ -1,0 +1,306 @@
+🔒 GUIA DE SEGURANÇA - YouAi
+════════════════════════════════════════════════════════════════════════════
+
+Este documento contém recomendações de segurança para o projeto YouAi.
+
+════════════════════════════════════════════════════════════════════════════
+1️⃣  VARIÁVEIS DE AMBIENTE
+════════════════════════════════════════════════════════════════════════════
+
+NUNCA faça commit de arquivos .env em produção!
+
+❌ ERRADO:
+  MONGODB_URI=mongodb+srv://usuario:123456@cluster.mongodb.net/youai
+  JWT_SECRET=minha_chave_super_fraca_123
+
+✅ CORRETO (Desenvolvimento):
+  MONGODB_URI=mongodb+srv://usuario:senha_forte@cluster.mongodb.net/youai
+  JWT_SECRET=Uma_Chave_Realmente_Forte_Com_Caracteres_Especiais!@#$%^&*
+
+✅ PRODUÇÃO:
+  Use variáveis de ambiente do servidor:
+  - Render: Painel → Environment
+  - Heroku: heroku config:set VAR=valor
+  - AWS: AWS Secrets Manager
+
+════════════════════════════════════════════════════════════════════════════
+2️⃣  SENHAS
+════════════════════════════════════════════════════════════════════════════
+
+A aplicação já implementa:
+  ✅ Hash com bcrypt (10 salts)
+  ✅ Comparação segura
+  ✅ Senha não armazenada em log
+  ✅ Validação de força (mínimo 6 caracteres)
+
+RECOMENDAÇÕES:
+  • Use senhas com pelo menos 12 caracteres em produção
+  • Implemente validação de força de senha no frontend
+  • Considere adicionar autenticação 2FA (two-factor)
+  • Não reutilize senhas
+
+════════════════════════════════════════════════════════════════════════════
+3️⃣  AUTENTICAÇÃO JWT
+════════════════════════════════════════════════════════════════════════════
+
+CONFIGURAÇÃO ATUAL:
+  • Token válido por 7 dias
+  • Armazenado no localStorage
+
+⚠️ MELHORIAS RECOMENDADAS:
+
+Para maior segurança em produção:
+
+a) Usar httpOnly cookies ao invés de localStorage:
+   // Backend
+   res.cookie('token', token, {
+     httpOnly: true,
+     secure: true,  // HTTPS apenas
+     sameSite: 'strict',
+     maxAge: 7 * 24 * 60 * 60 * 1000
+   })
+
+b) Implementar refresh tokens:
+   • Access token: 15 minutos
+   • Refresh token: 7 dias
+   • Refresh token em httpOnly cookie
+
+c) Renovar token periodicamente:
+   • Verificar expiração
+   • Renovar antes de expirar
+
+════════════════════════════════════════════════════════════════════════════
+4️⃣  PROTEÇÃO DE ROTAS
+════════════════════════════════════════════════════════════════════════════
+
+✅ IMPLEMENTADO:
+  • Middleware protect em todas as rotas sensíveis
+  • Verificação de ownership (usuário só acessa seus dados)
+  • Erros de autenticação retornam 401/403
+
+EXEMPLO:
+  // Verificar se cliente pertence ao usuário
+  if (client.userId.toString() !== req.user.id) {
+    return res.status(403).json({ success: false })
+  }
+
+════════════════════════════════════════════════════════════════════════════
+5️⃣  VALIDAÇÃO DE DADOS
+════════════════════════════════════════════════════════════════════════════
+
+IMPLEMENTADO:
+  ✅ Validação de email (regex)
+  ✅ Validação de campos obrigatórios
+  ✅ Validação de tipos
+  ✅ Tratamento de erros
+
+PARA MELHORAR:
+  Instale express-validator:
+
+  npm install express-validator
+
+  Exemplo:
+  const { body, validationResult } = require('express-validator')
+
+  app.post('/api/auth/register', [
+    body('email').isEmail(),
+    body('password').isLength({ min: 8 }),
+    body('name').trim().notEmpty()
+  ], (req, res) => {
+    const errors = validationResult(req)
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() })
+    }
+    // ...
+  })
+
+════════════════════════════════════════════════════════════════════════════
+6️⃣  MONGODB ATLAS
+════════════════════════════════════════════════════════════════════════════
+
+✅ CONFIGURAR:
+
+1. Network Access:
+   • NÃO USE 0.0.0.0/0 em produção
+   • Adicione apenas seus IPs de servidor
+   • Exemplo: 192.168.1.1/32
+
+2. Database Access:
+   • Crie usuário com permissões mínimas
+   • Use senhas fortes (20+ caracteres)
+   • Não use senhas simples
+
+3. Criptografia:
+   • Ativar criptografia em repouso
+   • Usar HTTPS em todas as conexões
+
+4. Backups:
+   • Ativar backup automático
+   • Testar restauração regularmente
+
+════════════════════════════════════════════════════════════════════════════
+7️⃣  CORS
+════════════════════════════════════════════════════════════════════════════
+
+CONFIGURAÇÃO ATUAL (Desenvolvimento):
+  cors({
+    origin: 'http://localhost:5173',
+    credentials: true
+  })
+
+PRODUÇÃO:
+  cors({
+    origin: 'https://seu-dominio.com',  // Específico
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+
+════════════════════════════════════════════════════════════════════════════
+8️⃣  RATE LIMITING
+════════════════════════════════════════════════════════════════════════════
+
+IMPLEMENTAR para evitar brute force:
+
+  npm install express-rate-limit
+
+  const rateLimit = require('express-rate-limit')
+
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,  // 15 minutos
+    max: 100,  // 100 requisições
+    message: 'Muitas requisições, tente novamente mais tarde'
+  })
+
+  app.use('/api/', limiter)
+  
+  // Limite mais restritivo para login
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5
+  })
+  
+  app.post('/api/auth/login', loginLimiter, login)
+
+════════════════════════════════════════════════════════════════════════════
+9️⃣  HELMET (Segurança de Headers)
+════════════════════════════════════════════════════════════════════════════
+
+Instale:
+  npm install helmet
+
+Use no servidor:
+  const helmet = require('helmet')
+  app.use(helmet())
+
+Isso adiciona headers de segurança:
+  • X-Frame-Options: DENY
+  • X-Content-Type-Options: nosniff
+  • Strict-Transport-Security
+  • etc.
+
+════════════════════════════════════════════════════════════════════════════
+🔟 LOGGING E MONITORAMENTO
+════════════════════════════════════════════════════════════════════════════
+
+IMPLEMENTAR:
+  npm install winston
+
+Para rastrear:
+  ✅ Tentativas de login falhadas
+  ✅ Acessos não autorizados
+  ✅ Erros do servidor
+  ✅ Atividades suspeitas
+
+EXEMPLO:
+  const winston = require('winston')
+
+  const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.json(),
+    transports: [
+      new winston.transports.File({ filename: 'error.log', level: 'error' }),
+      new winston.transports.File({ filename: 'combined.log' })
+    ]
+  })
+
+  // Usar
+  logger.info('Usuário fez login', { userId, email })
+  logger.error('Erro de conexão', { error })
+
+════════════════════════════════════════════════════════════════════════════
+1️⃣1️⃣  HTTPS EM PRODUÇÃO
+════════════════════════════════════════════════════════════════════════════
+
+IMPORTANTE:
+  ❌ NUNCA use HTTP em produção
+  ✅ SEMPRE use HTTPS
+
+Render/Heroku fazem isso automaticamente com Let's Encrypt.
+
+Para Node.js puro:
+  const https = require('https')
+  const fs = require('fs')
+
+  const options = {
+    key: fs.readFileSync('chave-privada.pem'),
+    cert: fs.readFileSync('certificado.pem')
+  }
+
+  https.createServer(options, app).listen(3001)
+
+════════════════════════════════════════════════════════════════════════════
+1️⃣2️⃣  SEGREDOS E TOKENS SENSÍVEIS
+════════════════════════════════════════════════════════════════════════════
+
+NUNCA faça commit:
+  ❌ .env files
+  ❌ Chaves privadas
+  ❌ Tokens API
+  ❌ Senhas de banco de dados
+  ❌ Certificados
+
+Use:
+  ✅ .gitignore (já configurado)
+  ✅ Variáveis de ambiente no servidor
+  ✅ Secrets management (AWS, GitHub, Render)
+
+════════════════════════════════════════════════════════════════════════════
+1️⃣3️⃣  CHECKLIST PRÉ-PRODUÇÃO
+════════════════════════════════════════════════════════════════════════════
+
+[ ] Senhas JWT e MongoDB são fortes (20+ caracteres)
+[ ] NODE_ENV está set como 'production'
+[ ] HTTPS está ativado
+[ ] CORS apenas permite seu domínio
+[ ] .env não está no git
+[ ] Rate limiting está implementado
+[ ] Logging está ativo
+[ ] Backups automáticos configurados
+[ ] Headers de segurança (Helmet) ativados
+[ ] Validação de entrada implementada
+[ ] Testes de segurança executados
+[ ] Dependências atualizadas (npm audit)
+
+════════════════════════════════════════════════════════════════════════════
+1️⃣4️⃣  MANUTENÇÃO CONTÍNUA
+════════════════════════════════════════════════════════════════════════════
+
+Regularmente:
+  • Verifique vulnerabilidades: npm audit
+  • Atualize dependências: npm update
+  • Revise logs de erro
+  • Teste backups
+  • Revise permissões de usuários
+  • Monitore usage de recursos
+
+════════════════════════════════════════════════════════════════════════════
+
+📞 DÚVIDAS DE SEGURANÇA?
+
+Recursos úteis:
+  • OWASP Top 10: https://owasp.org/Top10/
+  • Node.js Security: https://nodejs.org/en/docs/guides/security/
+  • MongoDB Best Practices: https://docs.mongodb.com/
+
+════════════════════════════════════════════════════════════════════════════

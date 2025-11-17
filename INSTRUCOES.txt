@@ -1,0 +1,177 @@
+🚀 YouAi - INSTRUÇÕES PARA INICIAR
+=====================================
+
+✅ TUDO JÁ FOI IMPLEMENTADO!
+
+Agora siga estes passos para rodar o projeto:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 PASSO 1: Criar conta MongoDB Atlas
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Acesse: https://www.mongodb.com/cloud/atlas
+2. Crie uma conta gratuita
+3. Crie um novo projeto
+4. Crie um cluster gratuito (M0)
+5. Crie um usuário de banco de dados
+   - Username: seu_usuario
+   - Password: sua_senha
+6. Vá para "Network Access" e adicione 0.0.0.0/0
+7. Clique em "Connect" e copie a string de conexão
+   - Será algo como: mongodb+srv://usuario:senha@cluster0.xxxxx.mongodb.net/youai
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 PASSO 2: Configurar arquivos .env
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📂 backend/.env (CRIAR ou EDITAR):
+──────────────────────────────────
+MONGODB_URI=mongodb+srv://seu_usuario:sua_senha@cluster.mongodb.net/youai
+JWT_SECRET=MinhaChaveSecretaBemComplicada123!@#
+PORT=3001
+NODE_ENV=development
+FRONTEND_URL=http://localhost:5173
+WHATSAPP_API_URL=https://api.whatsapp.com
+WHATSAPP_API_TOKEN=seu_token
+
+📂 frontend/.env (Já vem configurado):
+──────────────────────────────────────
+VITE_API_URL=http://localhost:3001
+VITE_APP_NAME=YouAi
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 PASSO 3: Instalar dependências
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Opção A - Setup Automático (RECOMENDADO):
+┌─────────────────────────────────────────┐
+│ Execute no PowerShell:                  │
+│ .\setup.bat                             │
+└─────────────────────────────────────────┘
+
+Opção B - Setup Manual:
+┌─────────────────────────────────────────┐
+│ Terminal 1 (Backend):                   │
+│ cd backend                              │
+│ npm install                             │
+│                                         │
+│ Terminal 2 (Frontend):                  │
+│ cd frontend                             │
+│ npm install                             │
+└─────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▶️ PASSO 4: Iniciar o Projeto
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📌 TERMINAL 1 - BACKEND:
+┌─────────────────────────────────────────┐
+│ cd backend                              │
+│ npm start                               │
+│                                         │
+│ Você deve ver:                          │
+│ ✅ MongoDB conectado com sucesso        │
+│ 🚀 You-Ai Backend rodando em porta 3001 │
+└─────────────────────────────────────────┘
+
+📌 TERMINAL 2 - FRONTEND (Abra um novo):
+┌─────────────────────────────────────────┐
+│ cd frontend                             │
+│ npm run dev                             │
+│                                         │
+│ Você verá:                              │
+│ Local: http://localhost:5173/           │
+└─────────────────────────────────────────┘
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🌐 PASSO 5: Acessar a Aplicação
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Abra seu navegador
+2. Acesse: http://localhost:5173
+3. Crie uma nova conta
+4. Faça login
+5. Comece a criar clientes e gerar QR Codes!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 FUNCIONALIDADES DISPONÍVEIS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Autenticação (Register/Login)
+✅ Gerenciar Clientes (CRUD)
+✅ Gerar QR Codes
+✅ Listar QR Codes
+✅ Baixar QR Codes como imagem
+✅ Deletar QR Codes
+✅ Dashboard completo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❓ DÚVIDAS FREQUENTES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+P: Como alterar a senha JWT?
+R: Edite backend/.env e mude JWT_SECRET
+
+P: Como mudar a porta do backend?
+R: Edite backend/.env e mude PORT=3001 para outra porta
+   Depois atualize frontend/.env VITE_API_URL
+
+P: Como integrar WhatsApp?
+R: Configure WHATSAPP_API_TOKEN em backend/.env
+   (Será implementado em breve)
+
+P: Erro de conexão MongoDB?
+R: Verifique se:
+   - Sua string MONGODB_URI está correta
+   - Seu IP está adicionado em MongoDB Atlas Network Access
+   - O usuário e senha estão corretos
+
+P: Erro CORS ao fazer login?
+R: Verifique se o backend está rodando na porta 3001
+   E se FRONTEND_URL no backend/.env está correto
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📞 ESTRUTURA DO PROJETO:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 backend/
+   ├── server.js                  (Servidor Express)
+   ├── package.json               (Dependências)
+   ├── .env                       (Variáveis de ambiente)
+   ├── config/database.js         (Conexão MongoDB)
+   ├── models/                    (Schemas: User, Client, Prompt)
+   ├── controllers/               (Lógica de negócios)
+   ├── routes/                    (Endpoints da API)
+   └── middleware/                (Autenticação JWT)
+
+📁 frontend/
+   ├── index.html                 (HTML principal)
+   ├── package.json               (Dependências)
+   ├── .env                       (Variáveis de ambiente)
+   ├── vite.config.js             (Configuração Vite)
+   └── src/
+       ├── App.jsx                (Componente raiz)
+       ├── main.jsx               (Entry point)
+       ├── index.css              (Estilos globais)
+       ├── components/            (Componentes React)
+       │   ├── Login.jsx
+       │   ├── Dashboard.jsx
+       │   ├── CreateClient.jsx
+       │   └── QRCodeGenerator.jsx
+       └── styles/                (CSS dos componentes)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📖 Para mais detalhes, veja README.md
+
+🎉 Boa sorte! Divirta-se com o YouAi!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

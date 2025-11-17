@@ -1,0 +1,101 @@
+.qrcode-generator-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.qrcode-generator-container h2 {
+  margin-bottom: 25px;
+  color: #333;
+}
+
+.empty-message {
+  background: #e7f3ff;
+  color: #004085;
+  padding: 15px;
+  border-radius: 5px;
+  border-left: 4px solid #004085;
+}
+
+.qrcode-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: bold;
+  color: #333;
+  font-size: 14px;
+}
+
+.qrcode-form input,
+.qrcode-form textarea,
+.qrcode-form select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.3s;
+}
+
+.qrcode-form input:focus,
+.qrcode-form textarea:focus,
+.qrcode-form select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+}
+
+.qrcode-form textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.qrcode-form select {
+  cursor: pointer;
+  background: white;
+}
+
+.submit-btn {
+  padding: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 14px;
+  padding: 10px;
+  background: #f8d7da;
+  border-radius: 5px;
+  border-left: 4px solid #dc3545;
+}
+
+@media (max-width: 768px) {
+  .qrcode-generator-container {
+    width: 100%;
+  }
+}

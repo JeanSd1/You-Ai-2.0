@@ -1,0 +1,172 @@
+🚀 GUIA RÁPIDO - YOUAI
+═══════════════════════════════════════════════════════════════════════════════
+
+1️⃣  CRIAR CONTA MONGODB
+═══════════════════════════════════════════════════════════════════════════════
+
+Acesse: https://www.mongodb.com/cloud/atlas
+  → Sign Up (grátis)
+  → Crie um cluster M0 (grátis)
+  → Crie um usuário de banco
+  → Copie a string: mongodb+srv://usuario:senha@cluster.mongodb.net/youai
+
+2️⃣  EDITAR backend\.env
+═══════════════════════════════════════════════════════════════════════════════
+
+Abra: c:\...\You-Ai-2.0\backend\.env
+
+Cole isto (substitute seus valores):
+──────────────────────────────────────
+MONGODB_URI=mongodb+srv://SEU_USUARIO:SUA_SENHA@cluster.mongodb.net/youai
+JWT_SECRET=CrieUmaChaveForteAqui123!@#$%^&*
+PORT=3001
+NODE_ENV=development
+FRONTEND_URL=http://localhost:5173
+WHATSAPP_API_URL=https://api.whatsapp.com
+WHATSAPP_API_TOKEN=seu_token_aqui
+──────────────────────────────────────
+
+Salve o arquivo.
+
+3️⃣  INSTALAR DEPENDÊNCIAS
+═══════════════════════════════════════════════════════════════════════════════
+
+Abra PowerShell na pasta c:\...\You-Ai-2.0
+
+Execute:
+  .\setup.bat
+
+Aguarde concluir (~2-3 minutos)
+
+4️⃣  INICIAR BACKEND
+═══════════════════════════════════════════════════════════════════════════════
+
+Em um PowerShell:
+  cd backend
+  npm start
+
+Você verá:
+  ✅ MongoDB conectado com sucesso
+  🚀 You-Ai Backend rodando em porta 3001
+
+Se não ver isso, verifique:
+  • MONGODB_URI está correto?
+  • Usuário MongoDB foi criado?
+  • IP foi adicionado no MongoDB Atlas Network Access?
+
+5️⃣  INICIAR FRONTEND
+═══════════════════════════════════════════════════════════════════════════════
+
+Em OUTRO PowerShell:
+  cd frontend
+  npm run dev
+
+Você verá:
+  ➜  Local: http://localhost:5173
+
+6️⃣  ACESSAR A APLICAÇÃO
+═══════════════════════════════════════════════════════════════════════════════
+
+Abra seu navegador:
+  http://localhost:5173
+
+Clique em "Registre-se"
+  Email: seu@email.com
+  Senha: sua_senha_123
+  Clique em "Criar Conta"
+
+Você será redirecionado para o Dashboard!
+
+7️⃣  CRIAR UM CLIENTE
+═══════════════════════════════════════════════════════════════════════════════
+
+Na aba "➕ Novo Cliente":
+  Nome: João Silva (obrigatório)
+  Telefone: 11987654321 (obrigatório)
+  Email: joao@example.com (opcional)
+  
+Clique em "Criar Cliente"
+
+8️⃣  GERAR QR CODE
+═══════════════════════════════════════════════════════════════════════════════
+
+Na aba "📱 Gerar QR Code":
+  Cliente: Selecione "João Silva"
+  Título: Desconto 20%
+  Conteúdo: Use este código para receber 20% de desconto
+  
+Clique em "📱 Gerar QR Code"
+
+9️⃣  USAR O QR CODE
+═══════════════════════════════════════════════════════════════════════════════
+
+Na aba "📊 Meus QR Codes":
+  Veja o QR Code gerado
+  Clique em "⬇️ Baixar" para salvar como imagem
+  Use um leitor de QR Code para verificar
+
+🔟 PRONTO!
+═══════════════════════════════════════════════════════════════════════════════
+
+Você tem um sistema completo de:
+  ✅ Autenticação de usuários
+  ✅ Gerenciamento de clientes
+  ✅ Geração de QR Codes
+  ✅ Download de QR Codes
+  ✅ Dashboard responsivo
+
+═══════════════════════════════════════════════════════════════════════════════
+
+ERROS COMUNS:
+
+❌ "Não consigo conectar ao MongoDB"
+  → Verifique MONGODB_URI no backend/.env
+  → Verifique usuário e senha
+  → Verifique Network Access no MongoDB Atlas
+
+❌ "Erro ao fazer login"
+  → Backend está rodando? (npm start)
+  → Você registrou primeiro? (clique em Registre-se)
+  → Verificar email e senha
+
+❌ "Página em branco"
+  → Frontend está rodando? (npm run dev)
+  → Abra console (F12) para ver erros
+  → Verifique VITE_API_URL em frontend/.env
+
+❌ "Porta já está em uso"
+  → Feche outros aplicativos usando a porta
+  → Ou mude PORT=3001 em backend/.env
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PARAR O PROJETO:
+
+Backend:  Pressione Ctrl+C no PowerShell
+Frontend: Pressione Ctrl+C no PowerShell
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PRÓXIMOS PASSOS:
+
+1. Explore todo o código
+2. Customiza cores e design
+3. Adicione novas funcionalidades
+4. Integre com WhatsApp (opcional)
+5. Faça deploy (Render, Heroku)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PARA MAIS INFORMAÇÕES:
+
+  📖 README.md           - Documentação completa
+  📘 ARQUITETURA.txt     - Como tudo funciona
+  🔒 SEGURANCA.txt       - Boas práticas
+  📝 INSTRUCOES.txt      - Guia detalhado
+  🔗 RECURSOS.txt        - Links úteis
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Boa sorte! 🚀
+
+Você conseguiu! 🎉
