@@ -9,6 +9,24 @@ const generateToken = (id) => {
   });
 };
 
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+
+// Helper: create nodemailer transporter if SMTP env vars provided
+const getTransporter = () => {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) return null;
+
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+};
+
 // ============== Rota: createUserByAdmin ==============
 // Cria um novo usuário. Esta rota deve ser protegida por middleware
 // que valida se o requisitante é um administrador (isAdmin=true).
@@ -38,11 +56,84 @@ exports.createUserByAdmin = async (req, res) => {
       isAdmin: !!isAdmin,
     });
 
+    // Send credentials email if SMTP configured
+    try {
+      const transporter = getTransporter();
+      if (transporter) {
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const mailOptions = {
+          from: process.env.SMTP_FROM || process.env.SMTP_USER,
+          to: email,
+          subject: 'Sua conta foi criada',
+          text: `Olá ${name},\n\nSua conta no YouAi foi criada.\nEmail: ${email}\nSenha: ${password}\n\nAcesse: ${frontendUrl} e faça login.\n\nAtenciosamente,\nEquipe YouAi`,
+        };
+
+        await transporter.sendMail(mailOptions);
+      }
+    } catch (mailErr) {
+      console.error('Erro ao enviar email de criação de conta:', mailErr.message);
+    }
+
     // Retorna dados mínimos do usuário criado (não inclui senha)
     res.status(201).json({ success: true, user: { id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin } });
   } catch (error) {
     console.error('Erro ao criar usuário pelo admin:', error.message);
     res.status(500).json({ success: false, message: 'Erro ao criar usuário', error: error.message });
+  }
+};
+
+// ============== Forgot password ==============
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: 'Email é obrigatório' });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(200).json({ success: true, message: 'Se o email existir, enviamos instruções' });
+
+    const token = crypto.randomBytes(20).toString('hex');
+    user.resetPasswordToken = token;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+    await user.save();
+
+    const transporter = getTransporter();
+    if (transporter) {
+      const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}?resetToken=${token}`;
+      const mailOptions = {
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: email,
+        subject: 'YouAi - Redefinição de senha',
+        text: `Você solicitou redefinir sua senha. Acesse o link abaixo e escolha uma nova senha (válido por 1 hora):\n\n${resetUrl}\n\nSe você não solicitou, ignore este email.`,
+      };
+
+      await transporter.sendMail(mailOptions);
+    }
+
+    res.status(200).json({ success: true, message: 'Se o email existir, enviamos instruções' });
+  } catch (error) {
+    console.error('Erro em forgotPassword:', error.message);
+    res.status(500).json({ success: false, message: 'Erro ao processar solicitação' });
+  }
+};
+
+// ============== Reset password ==============
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ success: false, message: 'Token e nova senha são obrigatórios' });
+
+    const user = await User.findOne({ resetPasswordToken: token, resetPasswordExpires: { $gt: Date.now() } }).select('+password');
+    if (!user) return res.status(400).json({ success: false, message: 'Token inválido ou expirado' });
+
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Senha redefinida com sucesso' });
+  } catch (error) {
+    console.error('Erro em resetPassword:', error.message);
+    res.status(500).json({ success: false, message: 'Erro ao resetar senha' });
   }
 };
 
@@ -162,3 +253,4 @@ exports.getProfile = async (req, res) => {
     });
   }
 };
+

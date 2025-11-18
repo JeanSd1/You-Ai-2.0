@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import axios from 'axios'
 import '../styles/Login.css'
+import ForgotPassword from './ForgotPassword'
+import ResetPassword from './ResetPassword'
 
 export default function Login({ onLoginSuccess }) {
   const [loading, setLoading] = useState(false)
@@ -9,6 +11,7 @@ export default function Login({ onLoginSuccess }) {
     password: '',
   })
   const [error, setError] = useState('')
+  const [showForgot, setShowForgot] = useState(false)
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -41,7 +44,13 @@ export default function Login({ onLoginSuccess }) {
 
   return (
     <div className="login-container">
-      <div className="login-box">
+      {/* If resetToken present in URL show ResetPassword */}
+      {new URLSearchParams(window.location.search).get('resetToken') ? (
+        <ResetPassword onResetSuccess={() => window.location.search = ''} />
+      ) : showForgot ? (
+        <ForgotPassword />
+      ) : (
+        <div className="login-box">
         <h1>YouAi</h1>
         <p className="subtitle">Gerador de QR Code com WhatsApp</p>
 
@@ -70,12 +79,13 @@ export default function Login({ onLoginSuccess }) {
           <button type="submit" disabled={loading}>
             {loading ? 'Processando...' : 'Entrar'}
           </button>
-        </form>
+          </form>
 
-        <div className="toggle-form">
-          <p>Contato com administrador para criar conta.</p>
+          <div className="toggle-form">
+            <p>Contato com administrador para criar conta. <button type="button" onClick={() => setShowForgot(true)}>Esqueci a senha</button></p>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

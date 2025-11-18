@@ -1,0 +1,42 @@
+.create-user-container {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.create-user-container h2 {
+  margin-bottom: 12px;
+}
+
+.user-form .form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.user-form input[type="text"],
+.user-form input[type="email"],
+.user-form input[type="password"] {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.submit-btn {
+  padding: 10px 16px;
+  background: #2b7cff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #c33;
+  margin-bottom: 8px;
+}

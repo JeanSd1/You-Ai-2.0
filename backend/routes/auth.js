@@ -7,7 +7,11 @@ const router = express.Router();
 
 // Rota: POST /api/auth/login
 // - Recebe { email, password } e retorna um JWT em caso de sucesso.
+
 router.post('/login', login);
+// Forgot / Reset password
+router.post('/forgot-password', require('../controllers/authController').forgotPassword);
+router.post('/reset-password', require('../controllers/authController').resetPassword);
 
 // Rota: GET /api/auth/profile
 // - Protegida por `protect` (verifica JWT). Retorna os dados do usuário autenticado.

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import '../styles/Dashboard.css'
 import CreateClient from './CreateClient'
+import CreateUser from './CreateUser'
 import QRCodeGenerator from './QRCodeGenerator'
 
 export default function Dashboard({ user, onLogout }) {
@@ -109,6 +110,15 @@ export default function Dashboard({ user, onLogout }) {
           >
             ➕ Novo Cliente
           </button>
+
+          {user?.role === 'admin' && (
+            <button
+              className={`tab-btn ${activeTab === 'create-user' ? 'active' : ''}`}
+              onClick={() => setActiveTab('create-user')}
+            >
+              👤 Novo Usuário
+            </button>
+          )}
           <button
             className={`tab-btn ${activeTab === 'qrcode' ? 'active' : ''}`}
             onClick={() => setActiveTab('qrcode')}
@@ -133,8 +143,8 @@ export default function Dashboard({ user, onLogout }) {
                 <p className="empty-message">Você ainda não tem clientes. <a href="#" onClick={() => setActiveTab('create')}>Criar novo</a></p>
               ) : (
                 <div className="clients-grid">
-                  {clients.map(client => (
-                    <div key={client._id} className="client-card">
+                  {clients.map((client, idx) => (
+                    <div key={client._id ?? `client-${idx}`} className="client-card">
                       <h3>{client.name}</h3>
                       <p><strong>Telefone:</strong> {client.phone}</p>
                       {client.email && <p><strong>Email:</strong> {client.email}</p>}
@@ -159,6 +169,10 @@ export default function Dashboard({ user, onLogout }) {
             <CreateClient onSuccess={handleClientCreated} />
           )}
 
+            {activeTab === 'create-user' && user?.role === 'admin' && (
+              <CreateUser onCreated={(u) => alert(`Usuário ${u.email} criado com sucesso!`)} />
+            )}
+
           {activeTab === 'qrcode' && (
             <QRCodeGenerator clients={clients} onSuccess={handleQRCodeGenerated} />
           )}
@@ -172,8 +186,8 @@ export default function Dashboard({ user, onLogout }) {
                 <p className="empty-message">Você ainda não gerou QR Codes. <a href="#" onClick={() => setActiveTab('qrcode')}>Gerar novo</a></p>
               ) : (
                 <div className="qrcodes-grid">
-                  {qrCodes.map(qr => (
-                    <div key={qr._id} className="qrcode-card">
+                  {qrCodes.map((qr, idx) => (
+                    <div key={qr._id ?? `qrcode-${idx}`} className="qrcode-card">
                       <h3>{qr.title}</h3>
                       <p className="qr-client">Cliente: {qr.clientId?.name}</p>
                       <img src={qr.qrCodeData} alt="QR Code" className="qrcode-image" />
