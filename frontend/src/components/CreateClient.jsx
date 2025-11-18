@@ -12,6 +12,8 @@ export default function CreateClient({ onSuccess }) {
     whatsappNumber: '',
     aiProvider: 'chatgpt',
     aiApiKey: '',
+    aiProviderEndpoint: '',
+    aiProviderHeader: '',
     company: '',
     address: '',
     city: '',
@@ -125,6 +127,26 @@ export default function CreateClient({ onSuccess }) {
               onChange={handleChange}
             />
           </div>
+
+          {formData.aiProvider === 'other' && (
+            <div className="form-row">
+              <input
+                type="text"
+                name="aiProviderEndpoint"
+                placeholder="Provider endpoint (ex: https://api.example.com/generate)"
+                value={formData.aiProviderEndpoint}
+                onChange={handleChange}
+              />
+
+              <input
+                type="text"
+                name="aiProviderHeader"
+                placeholder="Header name for API key (ex: x-api-key)"
+                value={formData.aiProviderHeader}
+                onChange={handleChange}
+              />
+            </div>
+          )}
 
         <div className="form-row">
           <input

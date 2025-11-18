@@ -35,6 +35,15 @@ const clientSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    // For custom providers (when aiProvider === 'other') allow storing endpoint and header key
+    aiProviderEndpoint: {
+      type: String,
+      trim: true,
+    },
+    aiProviderHeader: {
+      type: String,
+      trim: true,
+    },
     company: {
       type: String,
       trim: true,

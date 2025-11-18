@@ -2,11 +2,13 @@ const QRCode = require('qrcode');
 const Prompt = require('../models/Prompt');
 const Client = require('../models/Client');
 const axios = require('axios');
+const { decrypt } = require('../utils/crypto');
+const { generateForClient } = require('../services/aiService');
 
 // Gerar QR Code
 exports.generateQRCode = async (req, res) => {
   try {
-    const { clientId, title, content } = req.body;
+    const { clientId, title, content, useAI, aiInput } = req.body;
 
     if (!clientId || !title || !content) {
       return res.status(400).json({
@@ -28,11 +30,36 @@ exports.generateQRCode = async (req, res) => {
       });
     }
 
+    // If requested, generate content using client's configured AI
+    let finalContent = content;
+    if (useAI) {
+      const apiKeyEncrypted = client.aiApiKey;
+      const apiKey = apiKeyEncrypted ? decrypt(apiKeyEncrypted) : null;
+      if (!apiKey) {
+        return res.status(400).json({ success: false, message: 'AI API key not configured for this client' });
+      }
+
+      // provider info
+      const provider = client.aiProvider || 'chatgpt';
+      const endpoint = client.aiProviderEndpoint;
+      const header = client.aiProviderHeader;
+
+      const inputForAI = aiInput || content || '';
+
+      // Call aiService
+      try {
+        const generated = await generateForClient({ provider, apiKey, endpoint, header }, inputForAI);
+        finalContent = generated;
+      } catch (err) {
+        return res.status(500).json({ success: false, message: 'AI generation failed', error: err.message });
+      }
+    }
+
     // Criar dados para QR Code
     const qrData = {
       clientName: client.name,
       clientPhone: client.phone,
-      message: content,
+      message: finalContent,
       timestamp: new Date().toISOString(),
     };
 
