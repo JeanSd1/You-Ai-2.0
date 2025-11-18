@@ -3,7 +3,7 @@ const Client = require('../models/Client');
 // Criar novo cliente
 exports.createClient = async (req, res) => {
   try {
-    const { name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes } = req.body;
+    const { name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey } = req.body;
 
     if (!name || !phone) {
       return res.status(400).json({
@@ -18,6 +18,8 @@ exports.createClient = async (req, res) => {
       email,
       phone,
       whatsappNumber,
+      aiProvider,
+      aiApiKey,
       company,
       address,
       city,
@@ -110,7 +112,10 @@ exports.updateClient = async (req, res) => {
       });
     }
 
-    client = await Client.findByIdAndUpdate(req.params.id, req.body, {
+    // Only allow certain fields to be updated
+    const updatable = (({ name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey }) => ({ name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey }))(req.body);
+
+    client = await Client.findByIdAndUpdate(req.params.id, updatable, {
       new: true,
       runValidators: true,
     });

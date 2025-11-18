@@ -25,6 +25,16 @@ const clientSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    // AI provider configuration for this client (per-company)
+    aiProvider: {
+      type: String,
+      enum: ['chatgpt', 'gemini', 'perplexity', 'publicai', 'other'],
+      default: 'chatgpt',
+    },
+    aiApiKey: {
+      type: String,
+      trim: true,
+    },
     company: {
       type: String,
       trim: true,

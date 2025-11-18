@@ -10,6 +10,8 @@ export default function CreateClient({ onSuccess }) {
     email: '',
     phone: '',
     whatsappNumber: '',
+    aiProvider: 'chatgpt',
+    aiApiKey: '',
     company: '',
     address: '',
     city: '',
@@ -105,6 +107,24 @@ export default function CreateClient({ onSuccess }) {
             onChange={handleChange}
           />
         </div>
+
+          <div className="form-row">
+            <select name="aiProvider" value={formData.aiProvider} onChange={handleChange}>
+              <option value="chatgpt">ChatGPT</option>
+              <option value="gemini">Gemini</option>
+              <option value="perplexity">Perplexity</option>
+              <option value="publicai">PublicAI</option>
+              <option value="other">Outro</option>
+            </select>
+
+            <input
+              type="password"
+              name="aiApiKey"
+              placeholder="AI API Key (opcional)"
+              value={formData.aiApiKey}
+              onChange={handleChange}
+            />
+          </div>
 
         <div className="form-row">
           <input
