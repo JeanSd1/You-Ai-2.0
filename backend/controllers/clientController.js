@@ -1,4 +1,5 @@
 const Client = require('../models/Client');
+const { encrypt, decrypt } = require('../utils/crypto');
 
 // Criar novo cliente
 exports.createClient = async (req, res) => {
@@ -12,6 +13,9 @@ exports.createClient = async (req, res) => {
       });
     }
 
+    // encrypt aiApiKey before storing
+    const storedApiKey = aiApiKey ? encrypt(aiApiKey) : undefined;
+
     const client = await Client.create({
       userId: req.user.id,
       name,
@@ -19,7 +23,7 @@ exports.createClient = async (req, res) => {
       phone,
       whatsappNumber,
       aiProvider,
-      aiApiKey,
+      aiApiKey: storedApiKey,
       company,
       address,
       city,
@@ -46,9 +50,16 @@ exports.getClients = async (req, res) => {
   try {
     const clients = await Client.find({ userId: req.user.id });
 
+    // decrypt aiApiKey before returning (only for the owner)
+    const clientsSafe = clients.map(c => {
+      const obj = c.toObject();
+      obj.aiApiKey = c.aiApiKey ? decrypt(c.aiApiKey) : undefined;
+      return obj;
+    });
+
     res.status(200).json({
       success: true,
-      clients,
+      clients: clientsSafe,
     });
   } catch (error) {
     res.status(500).json({
@@ -79,9 +90,12 @@ exports.getClientById = async (req, res) => {
       });
     }
 
+    const clientObj = client.toObject();
+    clientObj.aiApiKey = client.aiApiKey ? decrypt(client.aiApiKey) : undefined;
+
     res.status(200).json({
       success: true,
-      client,
+      client: clientObj,
     });
   } catch (error) {
     res.status(500).json({
@@ -113,16 +127,24 @@ exports.updateClient = async (req, res) => {
     }
 
     // Only allow certain fields to be updated
-    const updatable = (({ name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey }) => ({ name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey }))(req.body);
+    const updatableRaw = (({ name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey }) => ({ name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey }))(req.body);
 
-    client = await Client.findByIdAndUpdate(req.params.id, updatable, {
+    // If aiApiKey provided, encrypt it before saving
+    if (updatableRaw.aiApiKey) {
+      updatableRaw.aiApiKey = encrypt(updatableRaw.aiApiKey);
+    }
+
+    client = await Client.findByIdAndUpdate(req.params.id, updatableRaw, {
       new: true,
       runValidators: true,
     });
 
+    const clientUpdated = client.toObject();
+    clientUpdated.aiApiKey = client.aiApiKey ? decrypt(client.aiApiKey) : undefined;
+
     res.status(200).json({
       success: true,
-      client,
+      client: clientUpdated,
     });
   } catch (error) {
     res.status(500).json({
