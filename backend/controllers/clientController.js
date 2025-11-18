@@ -1,72 +1,88 @@
+const mongoose = require('mongoose');
 const Client = require('../models/Client');
 const User = require('../models/User');
 const { encrypt, decrypt } = require('../utils/crypto');
 
 // Criar novo cliente
 exports.createClient = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey, aiProviderEndpoint, aiProviderHeader, clientEmail, clientPassword } = req.body;
 
     if (!name || !phone) {
-      return res.status(400).json({
-        success: false,
-        message: 'Nome e telefone são obrigatórios',
-      });
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ success: false, message: 'Nome e telefone são obrigatórios' });
     }
 
     // encrypt aiApiKey before storing
     const storedApiKey = aiApiKey ? encrypt(aiApiKey) : undefined;
 
-    // If client login credentials were provided, create a user account for the client
     let accountUserId = undefined;
+
+    // If client login credentials were provided, create a user account for the client within the transaction
     if (clientEmail && clientPassword) {
+      const emailLower = clientEmail.toLowerCase();
+
       // Check if email already exists
-      const existing = await User.findOne({ email: clientEmail.toLowerCase() });
+      const existing = await User.findOne({ email: emailLower }).session(session);
       if (existing) {
+        await session.abortTransaction();
+        session.endSession();
         return res.status(400).json({ success: false, message: 'Já existe um usuário com esse email para o cliente' });
       }
 
-      const newUser = await User.create({
-        name,
-        email: clientEmail.toLowerCase(),
-        password: clientPassword,
-        phone,
-        company,
-        isAdmin: false,
-      });
-
-      accountUserId = newUser._id;
+      const newUser = await User.create([{ name, email: emailLower, password: clientPassword, phone, company, isAdmin: false }], { session });
+      accountUserId = newUser[0]._id;
     }
 
-    const client = await Client.create({
-      userId: req.user.id,
-      name,
-      email,
-      phone,
-      whatsappNumber,
-      aiProvider,
-      aiApiKey: storedApiKey,
-      aiProviderEndpoint,
-      aiProviderHeader,
-      company,
-      address,
-      city,
-      state,
-      zipCode,
-      notes,
-      accountUserId,
-    });
+    const [client] = await Client.create([
+      {
+        userId: req.user.id,
+        name,
+        email,
+        phone,
+        whatsappNumber,
+        aiProvider,
+        aiApiKey: storedApiKey,
+        aiProviderEndpoint,
+        aiProviderHeader,
+        company,
+        address,
+        city,
+        state,
+        zipCode,
+        notes,
+        accountUserId,
+      }
+    ], { session });
 
-    res.status(201).json({
-      success: true,
-      client,
-    });
+    await session.commitTransaction();
+    session.endSession();
+
+    const clientObj = client.toObject();
+    clientObj.aiApiKey = client.aiApiKey ? decrypt(client.aiApiKey) : undefined;
+
+    return res.status(201).json({ success: true, client: clientObj });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Erro ao criar cliente',
-      error: error.message,
-    });
+    // Log full error for debugging
+    console.error('createClient error:', error);
+    try {
+      await session.abortTransaction();
+    } catch (e) {
+      console.error('Error aborting transaction:', e);
+    }
+    session.endSession();
+
+    // In development, return stack trace to help debugging in the frontend
+    const responsePayload = { success: false, message: 'Erro ao criar cliente', error: error.message };
+    if (process.env.NODE_ENV !== 'production') {
+      responsePayload.stack = error.stack;
+    }
+
+    return res.status(500).json(responsePayload);
   }
 };
 
