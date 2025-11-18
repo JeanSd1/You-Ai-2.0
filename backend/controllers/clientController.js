@@ -1,10 +1,11 @@
 const Client = require('../models/Client');
+const User = require('../models/User');
 const { encrypt, decrypt } = require('../utils/crypto');
 
 // Criar novo cliente
 exports.createClient = async (req, res) => {
   try {
-    const { name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey } = req.body;
+    const { name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey, aiProviderEndpoint, aiProviderHeader, clientEmail, clientPassword } = req.body;
 
     if (!name || !phone) {
       return res.status(400).json({
@@ -16,6 +17,27 @@ exports.createClient = async (req, res) => {
     // encrypt aiApiKey before storing
     const storedApiKey = aiApiKey ? encrypt(aiApiKey) : undefined;
 
+    // If client login credentials were provided, create a user account for the client
+    let accountUserId = undefined;
+    if (clientEmail && clientPassword) {
+      // Check if email already exists
+      const existing = await User.findOne({ email: clientEmail.toLowerCase() });
+      if (existing) {
+        return res.status(400).json({ success: false, message: 'Já existe um usuário com esse email para o cliente' });
+      }
+
+      const newUser = await User.create({
+        name,
+        email: clientEmail.toLowerCase(),
+        password: clientPassword,
+        phone,
+        company,
+        isAdmin: false,
+      });
+
+      accountUserId = newUser._id;
+    }
+
     const client = await Client.create({
       userId: req.user.id,
       name,
@@ -24,12 +46,15 @@ exports.createClient = async (req, res) => {
       whatsappNumber,
       aiProvider,
       aiApiKey: storedApiKey,
+      aiProviderEndpoint,
+      aiProviderHeader,
       company,
       address,
       city,
       state,
       zipCode,
       notes,
+      accountUserId,
     });
 
     res.status(201).json({

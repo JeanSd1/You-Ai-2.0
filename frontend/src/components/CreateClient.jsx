@@ -14,6 +14,8 @@ export default function CreateClient({ onSuccess }) {
     aiApiKey: '',
     aiProviderEndpoint: '',
     aiProviderHeader: '',
+    clientEmail: '',
+    clientPassword: '',
     company: '',
     address: '',
     city: '',
@@ -55,6 +57,12 @@ export default function CreateClient({ onSuccess }) {
         email: '',
         phone: '',
         whatsappNumber: '',
+        aiProvider: 'chatgpt',
+        aiApiKey: '',
+        aiProviderEndpoint: '',
+        aiProviderHeader: '',
+        clientEmail: '',
+        clientPassword: '',
         company: '',
         address: '',
         city: '',
@@ -124,6 +132,24 @@ export default function CreateClient({ onSuccess }) {
               name="aiApiKey"
               placeholder="AI API Key (opcional)"
               value={formData.aiApiKey}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="form-row">
+            <input
+              type="email"
+              name="clientEmail"
+              placeholder="Login do cliente (email)"
+              value={formData.clientEmail}
+              onChange={handleChange}
+            />
+
+            <input
+              type="password"
+              name="clientPassword"
+              placeholder="Senha do cliente"
+              value={formData.clientPassword}
               onChange={handleChange}
             />
           </div>

@@ -68,6 +68,11 @@ const clientSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    // Optional link to a user account created for this client (login credentials)
+    accountUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
     isActive: {
       type: Boolean,
       default: true,
