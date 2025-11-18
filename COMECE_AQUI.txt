@@ -74,7 +74,12 @@ Clique em "Registre-se"
   Email: seu@email.com
   Senha: sua_senha_123
   Clique em "Criar Conta"
+OBS: O registro público foi desativado. Crie a conta inicial de administrador com as variáveis no `backend/.env` ou execute `npm run create-admin`.
+Para ambiente local, adicione em `backend/.env`:
+  LOGIN_FIXO_EMAIL=seu_email_master@example.com
+  LOGIN_FIXO_SENHA=SUA_SENHA_MESTRE
 
+Usando o login mestre (email/senha acima) você poderá criar novas contas pelos endpoints administrativos.
 Você será redirecionado para o Dashboard!
 
 7️⃣  CRIAR UM CLIENTE
@@ -126,7 +131,7 @@ ERROS COMUNS:
 
 ❌ "Erro ao fazer login"
   → Backend está rodando? (npm start)
-  → Você registrou primeiro? (clique em Registre-se)
+  → Verifique se a conta já foi criada pelo administrador ou use o login mestre definido em `backend/.env`
   → Verificar email e senha
 
 ❌ "Página em branco"

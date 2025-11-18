@@ -3,14 +3,10 @@ import axios from 'axios'
 import '../styles/Login.css'
 
 export default function Login({ onLoginSuccess }) {
-  const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
     password: '',
-    phone: '',
-    company: '',
   })
   const [error, setError] = useState('')
 
@@ -30,16 +26,11 @@ export default function Login({ onLoginSuccess }) {
     setLoading(true)
 
     try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register'
-      const payload = isLogin 
-        ? { email: formData.email, password: formData.password }
-        : formData
+      const response = await axios.post(`${API_URL}/api/auth/login`, { email: formData.email, password: formData.password })
 
-      const response = await axios.post(`${API_URL}${endpoint}`, payload)
-      
       localStorage.setItem('token', response.data.token)
       localStorage.setItem('user', JSON.stringify(response.data.user))
-      
+
       onLoginSuccess(response.data.user)
     } catch (err) {
       setError(err.response?.data?.message || 'Erro ao processar requisição')
@@ -53,35 +44,8 @@ export default function Login({ onLoginSuccess }) {
       <div className="login-box">
         <h1>YouAi</h1>
         <p className="subtitle">Gerador de QR Code com WhatsApp</p>
-        
+
         <form onSubmit={handleSubmit}>
-          {!isLogin && (
-            <>
-              <input
-                type="text"
-                name="name"
-                placeholder="Nome completo"
-                value={formData.name}
-                onChange={handleChange}
-                required={!isLogin}
-              />
-              <input
-                type="tel"
-                name="phone"
-                placeholder="Telefone (opcional)"
-                value={formData.phone}
-                onChange={handleChange}
-              />
-              <input
-                type="text"
-                name="company"
-                placeholder="Empresa (opcional)"
-                value={formData.company}
-                onChange={handleChange}
-              />
-            </>
-          )}
-          
           <input
             type="email"
             name="email"
@@ -90,7 +54,7 @@ export default function Login({ onLoginSuccess }) {
             onChange={handleChange}
             required
           />
-          
+
           <input
             type="password"
             name="password"
@@ -104,31 +68,12 @@ export default function Login({ onLoginSuccess }) {
           {error && <div className="error-message">{error}</div>}
 
           <button type="submit" disabled={loading}>
-            {loading ? 'Processando...' : isLogin ? 'Entrar' : 'Criar Conta'}
+            {loading ? 'Processando...' : 'Entrar'}
           </button>
         </form>
 
         <div className="toggle-form">
-          <p>
-            {isLogin ? 'Não tem conta? ' : 'Já tem conta? '}
-            <button
-              type="button"
-              onClick={() => {
-                setIsLogin(!isLogin)
-                setError('')
-                setFormData({
-                  name: '',
-                  email: '',
-                  password: '',
-                  phone: '',
-                  company: '',
-                })
-              }}
-              className="toggle-btn"
-            >
-              {isLogin ? 'Registre-se' : 'Faça login'}
-            </button>
-          </p>
+          <p>Contato com administrador para criar conta.</p>
         </div>
       </div>
     </div>
