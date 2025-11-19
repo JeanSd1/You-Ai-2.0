@@ -35,6 +35,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/clients', require('./routes/clients'));
 app.use('/api/qrcode', require('./routes/qrcode'));
+// WhatsApp webhook route (used by providers to POST incoming messages)
+app.use('/api/whatsapp', require('./routes/whatsapp'));
 
 // Rota de healthcheck simples (pode ser usada para verificar se o servidor responde)
 app.get('/api/health', (req, res) => {

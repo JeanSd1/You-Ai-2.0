@@ -1,0 +1,12 @@
+comandos
+
+backend 
+
+cd 'C:\Users\Lugan\OneDrive\Área de Trabalho\YouAi\You-Ai-2.0\backend'
+npm run dev
+
+
+frontend  
+
+cd 'C:\Users\Lugan\OneDrive\Área de Trabalho\YouAi\You-Ai-2.0\frontend'
+npm run dev

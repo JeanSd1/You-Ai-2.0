@@ -4,6 +4,7 @@ const {
   getQRCodes,
   getQRCodeById,
   sendViaWhatsApp,
+  regenerateQRCodeAsWhatsApp,
   deleteQRCode,
 } = require('../controllers/qrcodeController');
 const protect = require('../middleware/auth');
@@ -11,6 +12,7 @@ const protect = require('../middleware/auth');
 const router = express.Router();
 
 router.post('/generate', protect, generateQRCode);
+router.post('/:id/regenerate', protect, regenerateQRCodeAsWhatsApp);
 router.get('/', protect, getQRCodes);
 router.get('/:id', protect, getQRCodeById);
 router.post('/send-whatsapp', protect, sendViaWhatsApp);

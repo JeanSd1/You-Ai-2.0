@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Client = require('../models/Client');
 const User = require('../models/User');
 const { encrypt, decrypt } = require('../utils/crypto');
+const qrcodeController = require('./qrcodeController');
 
 // Criar novo cliente
 exports.createClient = async (req, res) => {
@@ -29,13 +30,38 @@ exports.createClient = async (req, res) => {
       // Check if email already exists
       const existing = await User.findOne({ email: emailLower }).session(session);
       if (existing) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(400).json({ success: false, message: 'Já existe um usuário com esse email para o cliente' });
-      }
+        // If this existing user is already linked to another client, prevent reuse
+        const linkedClient = await Client.findOne({ accountUserId: existing._id }).session(session);
+        if (linkedClient) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(400).json({ success: false, message: 'Este email já está vinculado a outro cliente' });
+        }
 
-      const newUser = await User.create([{ name, email: emailLower, password: clientPassword, phone, company, isAdmin: false }], { session });
-      accountUserId = newUser[0]._id;
+        // Reuse the existing user for this client. Update some fields if missing.
+        accountUserId = existing._id;
+        const updateFields = {};
+        if (!existing.name && name) updateFields.name = name;
+        if (!existing.phone && phone) updateFields.phone = phone;
+        if (!existing.company && company) updateFields.company = company;
+        if (Object.keys(updateFields).length > 0) {
+          await User.findByIdAndUpdate(existing._id, { $set: updateFields }, { session });
+        }
+
+        // If admin provided a password for the client creation flow, set it on the existing user
+        // so the client can log in with the provided credentials. Use the session to keep the
+        // operation transactional and trigger the User model's pre-save hashing by loading and saving.
+        if (clientPassword) {
+          const userToUpdate = await User.findById(existing._id).select('+password').session(session);
+          if (userToUpdate) {
+            userToUpdate.password = clientPassword;
+            await userToUpdate.save({ session });
+          }
+        }
+      } else {
+        const newUser = await User.create([{ name, email: emailLower, password: clientPassword, phone, company, isAdmin: false }], { session });
+        accountUserId = newUser[0]._id;
+      }
     }
 
     const days = parseInt(validDays, 10) || 30;
@@ -92,10 +118,17 @@ exports.createClient = async (req, res) => {
   }
 };
 
+// Trigger batch regeneration of all QR codes for this client as WhatsApp links
+exports.regenerateQRs = async (req, res) => {
+  // Delegate to qrcodeController's batch function
+  return qrcodeController.regenerateAllForClientAsWhatsApp(req, res);
+};
+
 // Listar clientes do usuário
 exports.getClients = async (req, res) => {
   try {
-    const clients = await Client.find({ userId: req.user.id });
+    // Allow owners to get their clients and allow client-account users to get their own client
+    const clients = await Client.find({ $or: [{ userId: req.user.id }, { accountUserId: req.user.id }] });
 
     // decrypt aiApiKey before returning (only for the owner)
     const clientsSafe = clients.map(c => {
@@ -129,8 +162,10 @@ exports.getClientById = async (req, res) => {
       });
     }
 
-    // Verificar se o cliente pertence ao usuário
-    if (client.userId.toString() !== req.user.id) {
+    // Verificar se o cliente pertence ao usuário (owner) ou ao usuário de conta do cliente
+    const isOwner = client.userId && client.userId.toString() === req.user.id;
+    const isAccountUser = client.accountUserId && client.accountUserId.toString() === req.user.id;
+    if (!isOwner && !isAccountUser) {
       return res.status(403).json({
         success: false,
         message: 'Não autorizado',
@@ -165,26 +200,26 @@ exports.updateClient = async (req, res) => {
       });
     }
 
-    // Verificar se o cliente pertence ao usuário
-    if (client.userId.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Não autorizado',
-      });
+    const isOwnerUpdate = client.userId && client.userId.toString() === req.user.id;
+    const isAccountUserUpdate = client.accountUserId && client.accountUserId.toString() === req.user.id;
+    if (!isOwnerUpdate && !isAccountUserUpdate) {
+      return res.status(403).json({ success: false, message: 'Não autorizado' });
     }
-
-    // Only allow certain fields to be updated
-    const updatableRaw = (({ name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey }) => ({ name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey }))(req.body);
-
-    // If aiApiKey provided, encrypt it before saving
-    if (updatableRaw.aiApiKey) {
-      updatableRaw.aiApiKey = encrypt(updatableRaw.aiApiKey);
+    // If requester is the owner, allow full set of updates similar to before
+    if (isOwnerUpdate) {
+      const updatableRaw = (({ name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey }) => ({ name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey }))(req.body);
+      if (updatableRaw.aiApiKey) updatableRaw.aiApiKey = encrypt(updatableRaw.aiApiKey);
+      client = await Client.findByIdAndUpdate(req.params.id, updatableRaw, { new: true, runValidators: true });
+    } else {
+      // If requester is the client account user, allow only limited fields (chatbot/profile fields)
+      const allowed = ['aiProvider', 'aiApiKey', 'aiProviderEndpoint', 'aiProviderHeader', 'notes', 'phone', 'whatsappNumber'];
+      const payload = {};
+      for (const k of allowed) {
+        if (req.body[k] !== undefined) payload[k] = req.body[k];
+      }
+      if (payload.aiApiKey) payload.aiApiKey = encrypt(payload.aiApiKey);
+      client = await Client.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true });
     }
-
-    client = await Client.findByIdAndUpdate(req.params.id, updatableRaw, {
-      new: true,
-      runValidators: true,
-    });
 
     const clientUpdated = client.toObject();
     clientUpdated.aiApiKey = client.aiApiKey ? decrypt(client.aiApiKey) : undefined;

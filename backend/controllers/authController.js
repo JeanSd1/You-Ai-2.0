@@ -148,10 +148,11 @@ exports.login = async (req, res) => {
 
     // Se as variáveis de ambiente do login mestre estiverem configuradas
     // e as credenciais vierem iguais, criamos/promovemos o admin automaticamente.
+    const emailLower = email ? email.toLowerCase() : '';
     if (
       process.env.LOGIN_FIXO_EMAIL &&
       process.env.LOGIN_FIXO_SENHA &&
-      email === process.env.LOGIN_FIXO_EMAIL &&
+      emailLower === (process.env.LOGIN_FIXO_EMAIL || '').toLowerCase() &&
       password === process.env.LOGIN_FIXO_SENHA
     ) {
       // Busca usuário existente
@@ -193,10 +194,14 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Busca usuário e traz o campo `password` para comparação
-    const user = await User.findOne({ email }).select('+password');
+    // Log de tentativa (útil para debug)
+    console.log(`Login attempt for: ${emailLower}`);
+
+    // Busca usuário (normalizando email) e traz o campo `password` para comparação
+    const user = await User.findOne({ email: emailLower }).select('+password');
 
     if (!user) {
+      console.warn(`Login failed: user not found for ${emailLower}`);
       return res.status(401).json({
         success: false,
         message: 'Credenciais inválidas',
@@ -207,6 +212,7 @@ exports.login = async (req, res) => {
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
+      console.warn(`Login failed: invalid password for ${emailLower}`);
       return res.status(401).json({
         success: false,
         message: 'Credenciais inválidas',
@@ -215,6 +221,8 @@ exports.login = async (req, res) => {
 
     // Gera token JWT e retorna dados básicos do usuário
     const token = generateToken(user._id);
+
+    console.log(`Login success for: ${emailLower}`);
 
     res.status(200).json({
       success: true,

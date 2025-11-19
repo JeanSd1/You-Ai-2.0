@@ -16,12 +16,12 @@
 
     const clientPayload = {
       name: 'API Test Client',
-      email: 'apitest@youai.local',
+      email: 'apitest@youai.com',
       phone: '11999999999',
       whatsappNumber: '11999999999',
       aiProvider: 'publicai',
       aiApiKey: 'sk_dummy_key',
-      clientEmail: 'clientuser@youai.local',
+      clientEmail: 'clientuser@youai.com',
       clientPassword: 'ClientPass123!'
     };
 

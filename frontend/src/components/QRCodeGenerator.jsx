@@ -9,6 +9,7 @@ export default function QRCodeGenerator({ clients, onSuccess }) {
     clientId: '',
     title: '',
     content: '',
+    qrType: 'auto',
   })
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -99,6 +100,16 @@ export default function QRCodeGenerator({ clients, onSuccess }) {
               required
               rows="5"
             ></textarea>
+          </div>
+
+          <div className="form-group">
+            <label>Tipo de QR</label>
+            <select name="qrType" value={formData.qrType} onChange={handleChange}>
+              <option value="auto">Auto (WhatsApp se telefone existir)</option>
+              <option value="whatsapp">Abrir WhatsApp (wa.me)</option>
+              <option value="json">JSON (dados do cliente + mensagem)</option>
+            </select>
+            <small className="hint">Escolha como o QR deve se comportar ao ser escaneado.</small>
           </div>
 
           {error && <div className="error-message">{error}</div>}
