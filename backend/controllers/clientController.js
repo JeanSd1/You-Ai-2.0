@@ -296,6 +296,17 @@ exports.deleteClient = async (req, res) => {
       });
     }
 
+    // If there's an associated user account for this client, remove it as well
+    try {
+      if (client.accountUserId) {
+        await User.findByIdAndDelete(client.accountUserId);
+        console.log(`Deleted linked user ${client.accountUserId} for client ${client._id}`);
+      }
+    } catch (err) {
+      console.error('Error removing linked user for client deletion:', err.message);
+      // continue to delete client even if user deletion fails
+    }
+
     await Client.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
