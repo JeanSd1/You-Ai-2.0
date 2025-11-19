@@ -73,6 +73,22 @@ const clientSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
+    // Billing / validity
+    validUntil: {
+      type: Date,
+    },
+    validDays: {
+      type: Number,
+      default: 30,
+    },
+    // Simple payment history entries
+    paymentHistory: [
+      {
+        amount: Number,
+        date: Date,
+        note: String,
+      },
+    ],
     isActive: {
       type: Boolean,
       default: true,

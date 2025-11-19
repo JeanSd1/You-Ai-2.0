@@ -79,3 +79,12 @@ server.on('error', (err) => {
     console.error('❌ Erro no servidor:', err.message);
   }
 });
+
+// Start billing job (reminders & automatic inactivation)
+try {
+  const billingJob = require('./services/billingJob');
+  // run hourly in development; in production you can run less frequently
+  billingJob.start(process.env.BILLING_INTERVAL_MS ? parseInt(process.env.BILLING_INTERVAL_MS, 10) : 1000 * 60 * 60);
+} catch (err) {
+  console.error('Failed to start billing job:', err.message);
+}

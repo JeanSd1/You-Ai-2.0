@@ -14,6 +14,7 @@ export default function CreateClient({ onSuccess }) {
     aiApiKey: '',
     aiProviderEndpoint: '',
     aiProviderHeader: '',
+    validDays: 30,
     clientEmail: '',
     clientPassword: '',
     company: '',
@@ -41,9 +42,13 @@ export default function CreateClient({ onSuccess }) {
     setLoading(true)
 
     try {
+      const payload = { ...formData };
+      // ensure validDays is number
+      payload.validDays = Number(payload.validDays) || 30;
+
       const response = await axios.post(
         `${API_URL}/api/clients`,
-        formData,
+        payload,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -133,6 +138,17 @@ export default function CreateClient({ onSuccess }) {
               placeholder="AI API Key (opcional)"
               value={formData.aiApiKey}
               onChange={handleChange}
+            />
+          </div>
+
+          <div className="form-row">
+            <input
+              type="number"
+              name="validDays"
+              placeholder="Validade (dias)"
+              value={formData.validDays}
+              onChange={handleChange}
+              min={1}
             />
           </div>
 

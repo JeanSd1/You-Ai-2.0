@@ -9,7 +9,7 @@ exports.createClient = async (req, res) => {
   session.startTransaction();
 
   try {
-    const { name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey, aiProviderEndpoint, aiProviderHeader, clientEmail, clientPassword } = req.body;
+    const { name, email, phone, whatsappNumber, company, address, city, state, zipCode, notes, aiProvider, aiApiKey, aiProviderEndpoint, aiProviderHeader, clientEmail, clientPassword, validDays } = req.body;
 
     if (!name || !phone) {
       await session.abortTransaction();
@@ -38,6 +38,9 @@ exports.createClient = async (req, res) => {
       accountUserId = newUser[0]._id;
     }
 
+    const days = parseInt(validDays, 10) || 30;
+    const validUntilDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+
     const [client] = await Client.create([
       {
         userId: req.user.id,
@@ -56,6 +59,9 @@ exports.createClient = async (req, res) => {
         zipCode,
         notes,
         accountUserId,
+        validUntil: validUntilDate,
+        validDays: days,
+        paymentHistory: [],
       }
     ], { session });
 
@@ -193,6 +199,80 @@ exports.updateClient = async (req, res) => {
       message: 'Erro ao atualizar cliente',
       error: error.message,
     });
+  }
+};
+
+// Mark client as paid: extend validity by `days` (default 30) and add payment record
+exports.markPaid = async (req, res) => {
+  try {
+    const client = await Client.findById(req.params.id);
+    if (!client) return res.status(404).json({ success: false, message: 'Cliente não encontrado' });
+    if (client.userId.toString() !== req.user.id) return res.status(403).json({ success: false, message: 'Não autorizado' });
+
+    const days = parseInt(req.body.days, 10) || 30;
+    const now = new Date();
+    const currentValid = client.validUntil && client.validUntil > now ? client.validUntil : now;
+    const newValid = new Date(currentValid.getTime() + days * 24 * 60 * 60 * 1000);
+
+    client.validUntil = newValid;
+    client.validDays = days;
+    client.isActive = true;
+    client.paymentHistory = client.paymentHistory || [];
+    client.paymentHistory.push({ amount: req.body.amount || 0, date: now, note: req.body.note || 'Pagamento manual' });
+
+    await client.save();
+
+    res.status(200).json({ success: true, client });
+  } catch (error) {
+    console.error('markPaid error:', error);
+    res.status(500).json({ success: false, message: 'Erro ao marcar como pago', error: error.message });
+  }
+};
+
+// Update client account credentials (change email/password) — will update associated User if exists
+exports.updateCredentials = async (req, res) => {
+  try {
+    const { clientEmail, clientPassword } = req.body;
+    const client = await Client.findById(req.params.id);
+    if (!client) return res.status(404).json({ success: false, message: 'Cliente não encontrado' });
+    if (client.userId.toString() !== req.user.id) return res.status(403).json({ success: false, message: 'Não autorizado' });
+
+    if (client.accountUserId) {
+      const user = await User.findById(client.accountUserId).select('+password');
+      if (!user) return res.status(404).json({ success: false, message: 'Usuário vinculado não encontrado' });
+      if (clientEmail) user.email = clientEmail.toLowerCase();
+      if (clientPassword) user.password = clientPassword;
+      await user.save();
+    } else if (clientEmail && clientPassword) {
+      // create user and link
+      const existing = await User.findOne({ email: clientEmail.toLowerCase() });
+      if (existing) return res.status(400).json({ success: false, message: 'Já existe um usuário com esse email' });
+      const newUser = await User.create({ name: client.name, email: clientEmail.toLowerCase(), password: clientPassword, phone: client.phone, company: client.company, isAdmin: false });
+      client.accountUserId = newUser._id;
+      await client.save();
+    }
+
+    res.status(200).json({ success: true, client });
+  } catch (error) {
+    console.error('updateCredentials error:', error);
+    res.status(500).json({ success: false, message: 'Erro ao atualizar credenciais', error: error.message });
+  }
+};
+
+// Toggle active/inactive for a client
+exports.toggleActive = async (req, res) => {
+  try {
+    const client = await Client.findById(req.params.id);
+    if (!client) return res.status(404).json({ success: false, message: 'Cliente não encontrado' });
+    if (client.userId.toString() !== req.user.id) return res.status(403).json({ success: false, message: 'Não autorizado' });
+
+    client.isActive = !client.isActive;
+    await client.save();
+
+    res.status(200).json({ success: true, client });
+  } catch (error) {
+    console.error('toggleActive error:', error);
+    res.status(500).json({ success: false, message: 'Erro ao alternar estado', error: error.message });
   }
 };
 
