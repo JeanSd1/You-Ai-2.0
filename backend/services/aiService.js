@@ -24,7 +24,7 @@ async function generateWithChatGPT(apiKey, input, options = {}) {
   return choice.message?.content || choice.text || '';
 }
 
-async function generateWithOther(providerConfig, apiKey, input) {
+async function generateWithOther(providerConfig, apiKey, input, options = {}) {
   // providerConfig: { endpoint, header }
   if (!providerConfig?.endpoint) throw new Error('Provider endpoint not configured');
 
@@ -37,6 +37,21 @@ async function generateWithOther(providerConfig, apiKey, input) {
   } else {
     // fallback to Authorization: Bearer
     headers['Authorization'] = `Bearer ${apiKey}`;
+  }
+
+  // If endpoint looks like a chat/completions endpoint (PublicAI style), send model + messages
+  const isChatCompletions = /\/chat\/completions$/i.test(providerConfig.endpoint) || /chat\/completions/i.test(providerConfig.endpoint);
+  if (isChatCompletions) {
+    const model = options.model || providerConfig.model || process.env.PUBLICAI_DEFAULT_MODEL;
+    if (!model) throw new Error('Model not configured for provider (set client.aiProviderModel or PUBLICAI_DEFAULT_MODEL)');
+    const body = { model, messages: [{ role: 'user', content: input }] };
+    const resp = await axios.post(providerConfig.endpoint, body, { headers });
+
+    // Try common response shapes
+    if (resp.data?.choices?.[0]?.message?.content) return resp.data.choices[0].message.content;
+    if (resp.data?.choices?.[0]?.text) return resp.data.choices[0].text;
+    if (typeof resp.data === 'string') return resp.data;
+    return JSON.stringify(resp.data);
   }
 
   const resp = await axios.post(providerConfig.endpoint, { input }, { headers });
@@ -58,11 +73,11 @@ async function generateForClient({ provider, apiKey, endpoint, header }, input, 
     case 'chatgpt':
       return await generateWithChatGPT(apiKey, input, options);
     case 'other':
-      return await generateWithOther({ endpoint, header }, apiKey, input);
+      return await generateWithOther({ endpoint, header }, apiKey, input, options);
     // For now, other providers are treated as 'other' and require endpoint/header
     default:
       // Treat unknown providers as 'other'
-      return await generateWithOther({ endpoint, header }, apiKey, input);
+      return await generateWithOther({ endpoint, header }, apiKey, input, options);
   }
 }
 

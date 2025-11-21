@@ -40,6 +40,10 @@ const clientSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    aiProviderModel: {
+      type: String,
+      trim: true,
+    },
     aiProviderHeader: {
       type: String,
       trim: true,

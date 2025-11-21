@@ -28,7 +28,8 @@ async function main(){
     const provider = client.aiProvider || 'chatgpt';
     console.log('Calling generateForClient with provider:', provider);
     try{
-      const reply = await generateForClient({ provider, apiKey, endpoint: client.aiProviderEndpoint, header: client.aiProviderHeader }, 'oi');
+      const options = { model: client.aiProviderModel };
+      const reply = await generateForClient({ provider, apiKey, endpoint: client.aiProviderEndpoint, header: client.aiProviderHeader }, 'oi', options);
       console.log('AI reply:', reply);
     }catch(err){
       console.error('AI generation error (full):', err && err.response ? err.response.data || err.response.statusText : err.message);

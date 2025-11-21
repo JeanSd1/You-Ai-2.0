@@ -1,4 +1,5 @@
 const Client = require('../models/Client');
+const Prompt = require('../models/Prompt');
 const { decrypt } = require('../utils/crypto');
 const { generateForClient } = require('../services/aiService');
 const axios = require('axios');
@@ -78,11 +79,13 @@ exports.webhook = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Webhook payload missing `from` or `body`' });
     }
 
-    // Check if message carries a client tag like [client:<id>] inserted by the QR
+    // Check if message carries a client tag like [client:<id>] or [client:<id>|prompt:<promptId>] inserted by the QR
     let client = null;
-    const clientTagMatch = body.match(/^\[client:([0-9a-fA-F]{24})\]\s*/);
+    let selectedPromptId = null;
+    const clientTagMatch = body.match(/^\[client:([0-9a-fA-F]{24})(?:\|prompt:([0-9a-fA-F]{24}))?\]\s*/);
     if (clientTagMatch) {
       const clientId = clientTagMatch[1];
+      selectedPromptId = clientTagMatch[2] || null;
       client = await Client.findById(clientId);
       // strip tag from body
       body = body.replace(clientTagMatch[0], '').trim();
@@ -108,8 +111,18 @@ exports.webhook = async (req, res) => {
       return res.status(200).json({ success: false, message: 'Client inactive' });
     }
 
-    // Build AI input: combine client's stored prompt/notes with incoming message
-    const promptPrefix = client.notes ? `${client.notes}\n` : '';
+    // Determine which prompt/instruction to use: if a specific promptId was encoded in the QR, use it;
+    // otherwise use the most recent Prompt for the client. If none exists, fall back to client.notes.
+    let instruction = '';
+    if (selectedPromptId) {
+      const p = await Prompt.findById(selectedPromptId).lean();
+      if (p) instruction = p.content || p.title || '';
+    }
+    if (!instruction) {
+      const recent = await Prompt.findOne({ clientId: client._id }).sort({ createdAt: -1 }).lean();
+      if (recent) instruction = recent.content || recent.title || '';
+    }
+    const promptPrefix = instruction ? `${instruction}\n` : (client.notes ? `${client.notes}\n` : '');
     const aiInput = `${promptPrefix}Usuário: ${body}\nResposta:`;
 
     const encryptedKey = client.aiApiKey;
@@ -126,7 +139,8 @@ exports.webhook = async (req, res) => {
 
     let reply;
     try {
-      reply = await generateForClient({ provider, apiKey, endpoint, header }, aiInput);
+      const options = { model: client.aiProviderModel };
+      reply = await generateForClient({ provider, apiKey, endpoint, header }, aiInput, options);
     } catch (err) {
       console.error('AI generation error', err.message);
       return res.status(500).json({ success: false, message: 'AI generation failed' });
@@ -158,7 +172,7 @@ exports.webhook = async (req, res) => {
 // Simulate AI reply for a client (no outbound sending) — useful for local testing
 exports.simulate = async (req, res) => {
   try {
-    const { clientId, message } = req.body;
+    const { clientId, message, promptId } = req.body;
     if (!clientId || !message) return res.status(400).json({ success: false, message: 'clientId and message required' });
 
     const client = await Client.findById(clientId);
@@ -166,7 +180,17 @@ exports.simulate = async (req, res) => {
 
     if (!client.isActive) return res.status(400).json({ success: false, message: 'Client inactive' });
 
-    const promptPrefix = client.notes ? `${client.notes}\n` : '';
+    // Prefer explicit promptId if provided, otherwise use latest prompt for client, otherwise client.notes
+    let instruction = '';
+    if (promptId) {
+      const p = await Prompt.findById(promptId).lean();
+      if (p) instruction = p.content || p.title || '';
+    }
+    if (!instruction) {
+      const recent = await Prompt.findOne({ clientId: client._id }).sort({ createdAt: -1 }).lean();
+      if (recent) instruction = recent.content || recent.title || '';
+    }
+    const promptPrefix = instruction ? `${instruction}\n` : (client.notes ? `${client.notes}\n` : '');
     const aiInput = `${promptPrefix}Usuário: ${message}\nResposta:`;
 
     const encryptedKey = client.aiApiKey;
@@ -179,7 +203,8 @@ exports.simulate = async (req, res) => {
 
     let reply;
     try {
-      reply = await generateForClient({ provider, apiKey, endpoint, header }, aiInput);
+      const options = { model: client.aiProviderModel };
+      reply = await generateForClient({ provider, apiKey, endpoint, header }, aiInput, options);
     } catch (err) {
       console.error('AI generation error (simulate)', err.message);
       return res.status(500).json({ success: false, message: 'AI generation failed' });
