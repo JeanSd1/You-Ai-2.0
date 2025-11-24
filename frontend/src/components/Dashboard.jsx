@@ -11,6 +11,7 @@ export default function Dashboard({ user, onLogout }) {
   const [qrCodes, setQrCodes] = useState([])
   const [activeTab, setActiveTab] = useState('clients')
   const [loading, setLoading] = useState(false)
+  const [pendingReplies, setPendingReplies] = useState([])
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
   const token = localStorage.getItem('token')
 
@@ -23,6 +24,8 @@ export default function Dashboard({ user, onLogout }) {
       fetchClients()
     } else if (activeTab === 'qrcodes') {
       fetchQRCodes()
+    } else if (activeTab === 'replies') {
+      fetchPendingReplies()
     }
   }, [activeTab])
 
@@ -94,6 +97,30 @@ export default function Dashboard({ user, onLogout }) {
       } catch (error) {
         alert('Erro ao deletar QR Code')
       }
+    }
+  }
+
+  const fetchPendingReplies = async () => {
+    try {
+      setLoading(true)
+      const response = await axios.get(`${API_URL}/api/pending-replies`, { headers })
+      setPendingReplies(response.data.replies || [])
+    } catch (error) {
+      console.error('Erro ao buscar respostas pendentes:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const markReplySent = async (id) => {
+    if (!confirm('Marcar esta resposta como enviada?')) return;
+    try {
+      await axios.post(`${API_URL}/api/pending-replies/${id}/mark-sent`, {}, { headers })
+      setPendingReplies(pendingReplies.filter(p => p._id !== id))
+      alert('Marcado como enviado')
+    } catch (error) {
+      console.error('Erro ao marcar como enviado:', error)
+      alert('Erro ao marcar como enviado')
     }
   }
 
@@ -275,6 +302,7 @@ export default function Dashboard({ user, onLogout }) {
                       <h3>{qr.title}</h3>
                       <p className="qr-client">Cliente: {qr.clientId?.name}</p>
                       <img src={qr.qrCodeData} alt="QR Code" className="qrcode-image" />
+                      <p className="qr-note" style={{fontSize: '12px', color: '#666', marginTop: '6px'}}>Use a câmera do celular ou o botão "Abrir link" — não use o scanner dentro do app WhatsApp.</p>
                       <p className="qr-date">{new Date(qr.createdAt).toLocaleDateString('pt-BR')}</p>
                       <div className="qrcode-actions">
                         {qr.qrCodeUrl ? (
@@ -285,6 +313,16 @@ export default function Dashboard({ user, onLogout }) {
                             >
                               🔗 Abrir link
                             </button>
+                            {/* Open directly in WhatsApp on mobile using deep link when available */}
+                            {qr.qrAppUrl && (
+                              <button
+                                onClick={() => { try { window.location.href = qr.qrAppUrl } catch(e){ window.open(qr.qrCodeUrl, '_blank') } }}
+                                className="open-mobile-btn"
+                                style={{ marginLeft: '6px' }}
+                              >
+                                📱 Abrir no celular
+                              </button>
+                            )}
                             <button
                               onClick={() => navigator.clipboard.writeText(qr.qrCodeUrl).then(()=>alert('Link copiado para a área de transferência'))}
                               className="copy-link-btn"

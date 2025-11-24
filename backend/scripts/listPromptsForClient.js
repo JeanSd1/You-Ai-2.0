@@ -16,7 +16,7 @@ async function main(){
       console.log('Nenhum Prompt/QR encontrado para o clientId:', clientId);
     } else {
       console.log('Prompts encontrados:', prompts.length);
-      console.log(JSON.stringify(prompts.map(p=>({ _id: p._id, title: p.title, qrCodeUrl: p.qrCodeUrl, hasData: !!p.qrCodeData, createdAt: p.createdAt })), null, 2));
+      console.log(JSON.stringify(prompts.map(p=>({ _id: p._id, title: p.title, qrCodeUrl: p.qrCodeUrl, qrAppUrl: p.qrAppUrl, hasData: !!p.qrCodeData, createdAt: p.createdAt })), null, 2));
     }
     await mongoose.disconnect();
     process.exit(0);

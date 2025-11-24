@@ -37,6 +37,10 @@ app.use('/api/clients', require('./routes/clients'));
 app.use('/api/qrcode', require('./routes/qrcode'));
 // WhatsApp webhook route (used by providers to POST incoming messages)
 app.use('/api/whatsapp', require('./routes/whatsapp'));
+// Status route (reports outbound provider configuration)
+app.use('/api/status', require('./routes/status'));
+// Pending replies route
+app.use('/api/pending-replies', require('./routes/pendingReplies'));
 
 // Rota de healthcheck simples (pode ser usada para verificar se o servidor responde)
 app.get('/api/health', (req, res) => {

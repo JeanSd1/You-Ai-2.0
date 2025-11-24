@@ -25,6 +25,10 @@ const promptSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    qrAppUrl: {
+      type: String,
+      trim: true,
+    },
     qrCodeData: {
       type: String,
       trim: true,

@@ -154,8 +154,18 @@ exports.webhook = async (req, res) => {
       } else if (process.env.WA_CLOUD_TOKEN && process.env.WA_PHONE_ID) {
         await sendViaWhatsAppCloud(toPhone, reply);
       } else {
-        console.warn('No outbound WhatsApp provider configured');
-        return res.status(500).json({ success: false, message: 'No outbound WhatsApp provider configured on server' });
+        // No outbound provider configured: save reply as pending so user can copy/paste
+        console.warn('No outbound WhatsApp provider configured — saving pending reply');
+        const PendingReply = require('../models/PendingReply');
+        const pending = await PendingReply.create({
+          clientId: client._id,
+          promptId: selectedPromptId || null,
+          from: from,
+          toPhone: phoneDigits,
+          reply,
+          savedBy: req.user ? req.user.id : null
+        });
+        return res.status(200).json({ success: true, message: 'Reply saved pending', pending });
       }
     } catch (err) {
       console.error('Error sending WhatsApp message', err.message);

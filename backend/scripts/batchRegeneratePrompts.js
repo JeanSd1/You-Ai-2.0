@@ -20,7 +20,11 @@ async function main(){
     if(!client.phone) throw new Error('Client has no phone');
 
     const serverNumberRaw = process.env.WA_SERVER_NUMBER || (process.env.TWILIO_WHATSAPP_FROM ? process.env.TWILIO_WHATSAPP_FROM.replace('whatsapp:', '') : undefined);
-    const targetNumber = serverNumberRaw ? String(serverNumberRaw).replace(/\D/g, '') : String(client.phone).replace(/\D/g, '');
+    let targetNumber = serverNumberRaw ? String(serverNumberRaw).replace(/\D/g, '') : String(client.phone || '').replace(/\D/g, '');
+    const defaultCountry = process.env.DEFAULT_COUNTRY_CODE;
+    if (defaultCountry && targetNumber && !targetNumber.startsWith(defaultCountry) && (targetNumber.length === 10 || targetNumber.length === 11)) {
+      targetNumber = `${defaultCountry}${targetNumber}`;
+    }
 
     const prompts = await Prompt.find({ clientId: client._id });
     console.log('Found', prompts.length, 'prompts for client', clientId);
@@ -30,8 +34,10 @@ async function main(){
         const finalContent = p.content || p.title || '';
         const messageWithClientTag = `[client:${client._id}|prompt:${p._id}] ${finalContent}`;
         const waLink = `https://wa.me/${targetNumber}?text=${encodeURIComponent(messageWithClientTag)}`;
-        const qrCodeDataURL = await QRCode.toDataURL(waLink);
+        const appLink = `whatsapp://send?phone=${targetNumber}&text=${encodeURIComponent(messageWithClientTag)}`;
+        const qrCodeDataURL = await QRCode.toDataURL(appLink);
         p.qrCodeUrl = waLink;
+        p.qrAppUrl = appLink;
         p.qrCodeData = qrCodeDataURL;
         await p.save();
         updated++;

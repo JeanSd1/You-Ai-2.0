@@ -74,6 +74,7 @@ exports.generateQRCode = async (req, res) => {
     // salvar um JSON com os dados.
     let qrCodeDataURL;
     let qrCodeUrl = undefined;
+    let qrAppUrl = undefined;
 
     // Decide QR behavior based on qrType: 'auto' (default), 'whatsapp', or 'json'
     const type = qrType || 'auto';
@@ -85,12 +86,22 @@ exports.generateQRCode = async (req, res) => {
       // If a server WhatsApp number is configured, use it so incoming messages
       // go to the server number and webhooks can route the conversation to the correct client.
       const serverNumberRaw = process.env.WA_SERVER_NUMBER || (process.env.TWILIO_WHATSAPP_FROM ? process.env.TWILIO_WHATSAPP_FROM.replace('whatsapp:', '') : undefined);
-      const targetNumber = serverNumberRaw ? String(serverNumberRaw).replace(/\D/g, '') : String(client.phone).replace(/\D/g, '');
+      let targetNumber = serverNumberRaw ? String(serverNumberRaw).replace(/\D/g, '') : String(client.phone || '').replace(/\D/g, '');
+      // If a default country code is provided (e.g. '55') and the stored
+      // phone looks like a local number (10 or 11 digits) without country
+      // prefix, prepend the default country code to form an international number.
+      const defaultCountry = process.env.DEFAULT_COUNTRY_CODE;
+      if (defaultCountry && targetNumber && !targetNumber.startsWith(defaultCountry) && (targetNumber.length === 10 || targetNumber.length === 11)) {
+        targetNumber = `${defaultCountry}${targetNumber}`;
+      }
       // Prefix message with client identifier and prompt id so the webhook knows which client/prompt to use
       const messageWithClientTag = `[client:${client._id}|prompt:${prompt._id}] ${finalContent}`;
       const waLink = `https://wa.me/${targetNumber}?text=${encodeURIComponent(messageWithClientTag)}`;
-      qrCodeDataURL = await QRCode.toDataURL(waLink);
+      const appLink = `whatsapp://send?phone=${targetNumber}&text=${encodeURIComponent(messageWithClientTag)}`;
+      // encode QR image with the mobile deep link (appLink) so phone camera opens WhatsApp
+      qrCodeDataURL = await QRCode.toDataURL(appLink);
       qrCodeUrl = waLink;
+      qrAppUrl = appLink;
     } else if (type === 'json') {
       const qrData = {
         clientName: client.name,
@@ -103,11 +114,18 @@ exports.generateQRCode = async (req, res) => {
       // auto: prefer WhatsApp when phone exists
       if (client.phone) {
         const serverNumberRaw = process.env.WA_SERVER_NUMBER || (process.env.TWILIO_WHATSAPP_FROM ? process.env.TWILIO_WHATSAPP_FROM.replace('whatsapp:', '') : undefined);
-        const targetNumber = serverNumberRaw ? String(serverNumberRaw).replace(/\D/g, '') : String(client.phone).replace(/\D/g, '');
+        let targetNumber = serverNumberRaw ? String(serverNumberRaw).replace(/\D/g, '') : String(client.phone || '').replace(/\D/g, '');
+        const defaultCountry = process.env.DEFAULT_COUNTRY_CODE;
+        if (defaultCountry && targetNumber && !targetNumber.startsWith(defaultCountry) && (targetNumber.length === 10 || targetNumber.length === 11)) {
+          targetNumber = `${defaultCountry}${targetNumber}`;
+        }
         const messageWithClientTag = `[client:${client._id}|prompt:${prompt._id}] ${finalContent}`;
         const waLink = `https://wa.me/${targetNumber}?text=${encodeURIComponent(messageWithClientTag)}`;
-        qrCodeDataURL = await QRCode.toDataURL(waLink);
+        const appLink = `whatsapp://send?phone=${targetNumber}&text=${encodeURIComponent(messageWithClientTag)}`;
+        // Use appLink for QR image so phone camera opens the WhatsApp app
+        qrCodeDataURL = await QRCode.toDataURL(appLink);
         qrCodeUrl = waLink;
+        qrAppUrl = appLink;
       } else {
         const qrData = {
           clientName: client.name,
@@ -121,6 +139,7 @@ exports.generateQRCode = async (req, res) => {
     // Update prompt with QR information
     prompt.qrCodeData = qrCodeDataURL;
     prompt.qrCodeUrl = qrCodeUrl;
+    if (qrAppUrl) prompt.qrAppUrl = qrAppUrl;
     await prompt.save();
 
     res.status(201).json({
@@ -283,15 +302,22 @@ exports.regenerateQRCodeAsWhatsApp = async (req, res) => {
     // If a server WhatsApp number is configured, use it so incoming messages
     // go to the server number and webhooks can route the conversation to the correct client.
     const serverNumberRaw = process.env.WA_SERVER_NUMBER || (process.env.TWILIO_WHATSAPP_FROM ? process.env.TWILIO_WHATSAPP_FROM.replace('whatsapp:', '') : undefined);
-    const targetNumber = serverNumberRaw ? String(serverNumberRaw).replace(/\D/g, '') : String(client.phone).replace(/\D/g, '');
+    let targetNumber = serverNumberRaw ? String(serverNumberRaw).replace(/\D/g, '') : String(client.phone || '').replace(/\D/g, '');
+    const defaultCountry = process.env.DEFAULT_COUNTRY_CODE;
+    if (defaultCountry && targetNumber && !targetNumber.startsWith(defaultCountry) && (targetNumber.length === 10 || targetNumber.length === 11)) {
+      targetNumber = `${defaultCountry}${targetNumber}`;
+    }
     // Prefix message with client identifier and prompt id so the webhook knows which client/prompt to use
     const messageWithClientTag = `[client:${client._id}|prompt:${prompt._id}] ${finalContent}`;
     const waLink = `https://wa.me/${targetNumber}?text=${encodeURIComponent(messageWithClientTag)}`;
-    const qrCodeDataURL = await QRCode.toDataURL(waLink);
+    const appLink = `whatsapp://send?phone=${targetNumber}&text=${encodeURIComponent(messageWithClientTag)}`;
+    // encode QR image with the mobile deep link so phone camera opens WhatsApp
+    const qrCodeDataURL = await QRCode.toDataURL(appLink);
 
     // Update prompt
     prompt.qrCodeData = qrCodeDataURL;
     prompt.qrCodeUrl = waLink;
+    prompt.qrAppUrl = appLink;
     await prompt.save();
 
     res.status(200).json({ success: true, qrCode: prompt });
@@ -326,9 +352,11 @@ exports.regenerateAllForClientAsWhatsApp = async (req, res) => {
         const finalContent = p.content || p.title || '';
         const messageWithClientTag = `[client:${client._id}|prompt:${p._id}] ${finalContent}`;
         const waLink = `https://wa.me/${targetNumber}?text=${encodeURIComponent(messageWithClientTag)}`;
-        const qrCodeDataURL = await QRCode.toDataURL(waLink);
+        const appLink = `whatsapp://send?phone=${targetNumber}&text=${encodeURIComponent(messageWithClientTag)}`;
+        const qrCodeDataURL = await QRCode.toDataURL(appLink);
         p.qrCodeData = qrCodeDataURL;
         p.qrCodeUrl = waLink;
+        p.qrAppUrl = appLink;
         await p.save();
         updated++;
       } catch (err) {
