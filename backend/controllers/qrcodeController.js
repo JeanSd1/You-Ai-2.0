@@ -98,8 +98,9 @@ exports.generateQRCode = async (req, res) => {
       const messageWithClientTag = `[client:${client._id}|prompt:${prompt._id}] ${finalContent}`;
       const waLink = `https://wa.me/${targetNumber}?text=${encodeURIComponent(messageWithClientTag)}`;
       const appLink = `whatsapp://send?phone=${targetNumber}&text=${encodeURIComponent(messageWithClientTag)}`;
-      // encode QR image with the mobile deep link (appLink) so phone camera opens WhatsApp
-      qrCodeDataURL = await QRCode.toDataURL(appLink);
+      // encode QR image with the wa.me https link so WhatsApp's in-app scanner recognizes it
+      // keep whatsapp:// deep link in `qrAppUrl` for the frontend "Abrir no celular" button
+      qrCodeDataURL = await QRCode.toDataURL(waLink);
       qrCodeUrl = waLink;
       qrAppUrl = appLink;
     } else if (type === 'json') {
@@ -122,8 +123,9 @@ exports.generateQRCode = async (req, res) => {
         const messageWithClientTag = `[client:${client._id}|prompt:${prompt._id}] ${finalContent}`;
         const waLink = `https://wa.me/${targetNumber}?text=${encodeURIComponent(messageWithClientTag)}`;
         const appLink = `whatsapp://send?phone=${targetNumber}&text=${encodeURIComponent(messageWithClientTag)}`;
-        // Use appLink for QR image so phone camera opens the WhatsApp app
-        qrCodeDataURL = await QRCode.toDataURL(appLink);
+        // Use wa.me https link for QR image so WhatsApp's in-app scanner accepts it,
+        // while `qrAppUrl` stores the whatsapp:// deep link for direct opening on mobile
+        qrCodeDataURL = await QRCode.toDataURL(waLink);
         qrCodeUrl = waLink;
         qrAppUrl = appLink;
       } else {
@@ -353,7 +355,7 @@ exports.regenerateAllForClientAsWhatsApp = async (req, res) => {
         const messageWithClientTag = `[client:${client._id}|prompt:${p._id}] ${finalContent}`;
         const waLink = `https://wa.me/${targetNumber}?text=${encodeURIComponent(messageWithClientTag)}`;
         const appLink = `whatsapp://send?phone=${targetNumber}&text=${encodeURIComponent(messageWithClientTag)}`;
-        const qrCodeDataURL = await QRCode.toDataURL(appLink);
+        const qrCodeDataURL = await QRCode.toDataURL(waLink);
         p.qrCodeData = qrCodeDataURL;
         p.qrCodeUrl = waLink;
         p.qrAppUrl = appLink;

@@ -302,7 +302,7 @@ export default function Dashboard({ user, onLogout }) {
                       <h3>{qr.title}</h3>
                       <p className="qr-client">Cliente: {qr.clientId?.name}</p>
                       <img src={qr.qrCodeData} alt="QR Code" className="qrcode-image" />
-                      <p className="qr-note" style={{fontSize: '12px', color: '#666', marginTop: '6px'}}>Use a câmera do celular ou o botão "Abrir link" — não use o scanner dentro do app WhatsApp.</p>
+                      <p className="qr-note" style={{fontSize: '12px', color: '#666', marginTop: '6px'}}>Você pode usar a câmera do celular, o scanner dentro do app WhatsApp ou o botão "Abrir link" — todos devem abrir o chat do WhatsApp.</p>
                       <p className="qr-date">{new Date(qr.createdAt).toLocaleDateString('pt-BR')}</p>
                       <div className="qrcode-actions">
                         {qr.qrCodeUrl ? (

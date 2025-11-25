@@ -35,7 +35,8 @@ async function main(){
         const messageWithClientTag = `[client:${client._id}|prompt:${p._id}] ${finalContent}`;
         const waLink = `https://wa.me/${targetNumber}?text=${encodeURIComponent(messageWithClientTag)}`;
         const appLink = `whatsapp://send?phone=${targetNumber}&text=${encodeURIComponent(messageWithClientTag)}`;
-        const qrCodeDataURL = await QRCode.toDataURL(appLink);
+        // Use wa.me https link for QR image so WhatsApp's in-app scanner recognizes it
+        const qrCodeDataURL = await QRCode.toDataURL(waLink);
         p.qrCodeUrl = waLink;
         p.qrAppUrl = appLink;
         p.qrCodeData = qrCodeDataURL;
