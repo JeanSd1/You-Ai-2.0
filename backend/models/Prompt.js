@@ -45,6 +45,18 @@ const promptSchema = new mongoose.Schema(
     sentAt: {
       type: Date,
     },
+        apiProvider: {
+      type: String,
+      enum: ['openai', 'relevance', 'cohere', 'anthropic', 'custom'],
+      default: 'openai',
+      trim: true,
+    },
+    apiKey: {
+      type: String,
+      required: false,
+      trim: true,
+      select: false,
+    },
   },
   { timestamps: true }
 );
