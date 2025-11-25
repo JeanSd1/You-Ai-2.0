@@ -42,6 +42,15 @@ app.use('/api/status', require('./routes/status'));
 // Pending replies route
 app.use('/api/pending-replies', require('./routes/pendingReplies'));
 
+// Bailey/WhatsApp routes (if present)
+try {
+  // Register Baileys routes (won't throw if files are not present)
+  app.use('/api/whatsapp-bailey', require('./routes/whatsappBailey'));
+} catch (err) {
+  // route not present yet or not installed; that's fine in dev
+  console.log('WhatsApp Baileys routes not registered (file missing) — skipping.');
+}
+
 // Rota de healthcheck simples (pode ser usada para verificar se o servidor responde)
 app.get('/api/health', (req, res) => {
   res.status(200).json({
@@ -74,8 +83,25 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3001;
 
 // Inicia o servidor e trata erro de porta em uso para ajudar no debug local
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`🚀 You-Ai Backend rodando em porta ${PORT}`);
+
+  // If the Baileys-based WhatsApp service is available, initialize it.
+  try {
+    // require lazily to avoid startup errors when dependencies are missing
+    const { initializeWhatsApp } = require('./services/whatsappService');
+    if (typeof initializeWhatsApp === 'function') {
+      try {
+        await initializeWhatsApp();
+        console.log('✅ WhatsApp Baileys service initialized');
+      } catch (err) {
+        console.error('⚠️ Failed to initialize WhatsApp Baileys service:', err && err.message);
+      }
+    }
+  } catch (err) {
+    // not a fatal error — the service may not be present in some environments
+    console.log('WhatsApp Baileys service not found — skipping initialization.');
+  }
 });
 
 server.on('error', (err) => {
