@@ -313,8 +313,8 @@ exports.regenerateQRCodeAsWhatsApp = async (req, res) => {
     const messageWithClientTag = `[client:${client._id}|prompt:${prompt._id}] ${finalContent}`;
     const waLink = `https://wa.me/${targetNumber}?text=${encodeURIComponent(messageWithClientTag)}`;
     const appLink = `whatsapp://send?phone=${targetNumber}&text=${encodeURIComponent(messageWithClientTag)}`;
-    // encode QR image with the mobile deep link so phone camera opens WhatsApp
-    const qrCodeDataURL = await QRCode.toDataURL(appLink);
+    // encode QR image with the wa.me https link so WhatsApp's in-app scanner recognizes it
+    const qrCodeDataURL = await QRCode.toDataURL(waLink);
 
     // Update prompt
     prompt.qrCodeData = qrCodeDataURL;
