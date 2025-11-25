@@ -254,6 +254,25 @@ export default function Dashboard({ user, onLogout }) {
                           🔁 Regerar QRs (WhatsApp)
                         </button>
                         <button
+                          onClick={async () => {
+                            if (!confirm('Regenerar TODOS os QRs deste cliente para formato WhatsApp (wa.me)?')) return;
+                            setLoading(true);
+                            try {
+                              const response = await axios.post(`${API_URL}/api/clients/${client._id}/regenerate-qrs`, {}, { headers });
+                              alert(`Regeneração concluída. Atualizados: ${response.data.updated}, Ignorados: ${response.data.skipped}, Total: ${response.data.total}`);
+                              if (activeTab === 'qrcodes') fetchQRCodes();
+                            } catch (err) {
+                              alert('Erro ao regerar todos os QRs: ' + (err.response?.data?.message || err.message));
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          className="regen-btn"
+                          style={{ background: '#6c63ff', color: '#fff', marginLeft: 6 }}
+                        >
+                          ♻️ Regerar TODOS os QRs
+                        </button>
+                        <button
                           onClick={() => deleteClient(client._id)}
                           className="delete-btn"
                         >
